@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Shizuku App Crawler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --border: #1e2330;
+    --border-bright: #2a3040;
+    --green: #00e5a0;
+    --green-dim: #00b87d;
+    --green-glow: rgba(0,229,160,0.12);
+    --amber: #ffb347;
+    --red: #ff5f6d;
+    --blue: #4fc3f7;
+    --muted: #4a5568;
+    --text: #c8d0e0;
+    --text-bright: #eef1f7;
+    --text-dim: #6b7a99;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.07) 2px,
+      rgba(0,0,0,0.07) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Grid bg */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 0 16px 80px; }
+
+  /* ── Header ── */
+  header {
+    padding: 48px 0 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .logo-icon {
+    width: 42px; height: 42px;
+    border: 2px solid var(--green);
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 0 14px var(--green-glow), inset 0 0 10px var(--green-glow);
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 22px; height: 22px; }
+  h1 {
+    font-size: clamp(22px, 5vw, 32px);
+    font-weight: 800;
+    color: var(--text-bright);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  h1 span { color: var(--green); }
+  .subtitle {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid;
+    letter-spacing: 0.05em;
+  }
+  .badge-green { color: var(--green); border-color: var(--green-dim); background: var(--green-glow); }
+  .badge-amber { color: var(--amber); border-color: rgba(255,179,71,0.4); background: rgba(255,179,71,0.08); }
+  .badge-blue  { color: var(--blue);  border-color: rgba(79,195,247,0.4); background: rgba(79,195,247,0.08); }
+
+  /* ── Search ── */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 18px;
+  }
+  .search-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    width: 16px; height: 16px;
+    pointer-events: none;
+  }
+  #search {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    color: var(--text-bright);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    padding: 12px 14px 12px 42px;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  #search::placeholder { color: var(--muted); }
+  #search:focus {
+    border-color: var(--green-dim);
+    box-shadow: 0 0 0 3px var(--green-glow);
+  }
+
+  /* ── Filter tabs ── */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .tab {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-bright);
+    background: var(--surface);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); border-color: var(--muted); }
+  .tab.active {
+    background: var(--green-glow);
+    border-color: var(--green-dim);
+    color: var(--green);
+  }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  #count-label { color: var(--text-dim); }
+  #count-label strong { color: var(--green); font-weight: 700; }
+
+  /* ── App Cards ── */
+  #app-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .app-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: start;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    animation: fadeIn 0.25s ease both;
+  }
+  .app-card:hover {
+    border-color: var(--border-bright);
+    box-shadow: 0 0 0 1px var(--border-bright), 0 4px 20px rgba(0,0,0,0.4);
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-left { min-width: 0; }
+  .app-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-bright);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  .app-name mark {
+    background: rgba(0,229,160,0.2);
+    color: var(--green);
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+  .app-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .app-desc mark {
+    background: rgba(0,229,160,0.2);
+    color: var(--green);
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+  .card-tags {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid;
+    letter-spacing: 0.03em;
+  }
+  .tag-recent { color: var(--green); border-color: rgba(0,229,160,0.3); background: var(--green-glow); }
+  .tag-old    { color: var(--amber); border-color: rgba(255,179,71,0.3); background: rgba(255,179,71,0.07); }
+  .tag-norls  { color: var(--text-dim); border-color: var(--border-bright); background: transparent; }
+
+  .card-right { flex-shrink: 0; padding-top: 2px; }
+  .gh-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--blue);
+    text-decoration: none;
+    border: 1px solid rgba(79,195,247,0.25);
+    border-radius: 6px;
+    padding: 5px 9px;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .gh-link:hover {
+    background: rgba(79,195,247,0.08);
+    border-color: rgba(79,195,247,0.5);
+  }
+  .gh-link svg { width: 12px; height: 12px; }
+
+  /* ── Empty / Loading / Error states ── */
+  .state-box {
+    text-align: center;
+    padding: 64px 24px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .state-box .big { font-size: 36px; margin-bottom: 12px; }
+  .state-box p { margin-top: 6px; }
+
+  .spinner {
+    width: 32px; height: 32px;
+    border: 2px solid var(--border-bright);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 48px;
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  footer a { color: var(--text-dim); text-decoration: none; }
+  footer a:hover { color: var(--green); }
+
+  /* ── Responsive ── */
+  @media (max-width: 480px) {
+    .app-card { grid-template-columns: 1fr; }
+    .card-right { display: flex; justify-content: flex-start; }
+    header { padding: 32px 0 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Shizuku <span>App Crawler</span></h1>
+      </div>
+    </div>
+    <p class="subtitle">// Live data from timschneeb/app-crawler · Updated daily via GitHub Actions</p>
+    <div class="meta-row" id="meta-row">
+      <span class="badge badge-green" id="badge-total">Loading…</span>
+      <span class="badge badge-amber" id="badge-releases"></span>
+      <span class="badge badge-blue" id="badge-norls" style="display:none"></span>
+    </div>
+  </header>
+
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input id="search" type="search" placeholder="Search apps, descriptions…" autocomplete="off" spellcheck="false"/>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-filter="all">All Apps</button>
+    <button class="tab" data-filter="recent">✦ Recent Releases</button>
+    <button class="tab" data-filter="old">Older Releases</button>
+    <button class="tab" data-filter="norls-recent">No Releases (Recent)</button>
+    <button class="tab" data-filter="norls-old">No Releases (Older)</button>
+  </div>
+
+  <div class="stats-bar">
+    <span id="count-label"><strong id="visible-count">–</strong> apps</span>
+    <span id="updated-label"></span>
+  </div>
+
+  <div id="app-list">
+    <div class="state-box">
+      <div class="spinner"></div>
+      <p>Fetching live data from GitHub…</p>
+    </div>
+  </div>
+
+  <footer>
+    <p>Data source: <a href="https://github.com/timschneeb/app-crawler" target="_blank">timschneeb/app-crawler</a> ·
+       Curated list: <a href="https://github.com/timschneeb/awesome-shizuku" target="_blank">awesome-shizuku</a></p>
+    <p>This page fetches and renders the live SUMMARY.md on every visit · No server · No tracking</p>
+  </footer>
+
+</div>
+
+<script>
+const RAW_URL = 'https://raw.githubusercontent.com/timschneeb/app-crawler/master/SUMMARY.md';
+
+let allApps = [];
+let activeFilter = 'all';
+let searchQuery = '';
+
+// ── Parser ──────────────────────────────────────────────
+function parseSummary(md) {
+  const apps = [];
+  const lines = md.split('\n');
+
+  // Categories determined by section headers
+  // "Apps with releases" / "Apps with no releases"
+  // "Updated in the last 3 months" / "Updated more than 3 months ago"
+  let hasReleases = false;
+  let isRecent = false;
+
+  const appLine = /^\* \[([^\]]+)\]\(([^)]+)\)(?:\s*-\s*(.+))?/;
+
+  for (const line of lines) {
+    const l = line.trim();
+    if (l.startsWith('### Apps with releases')) { hasReleases = true; continue; }
+    if (l.startsWith('### Apps with no releases')) { hasReleases = false; continue; }
+    if (l.startsWith('#### Updated in the last 3 months')) { isRecent = true; continue; }
+    if (l.startsWith('#### Updated more than 3 months ago')) { isRecent = false; continue; }
+    const m = appLine.exec(l);
+    if (m) {
+      apps.push({
+        name: m[1].trim(),
+        url: m[2].trim(),
+        desc: m[3] ? m[3].trim() : '',
+        hasReleases,
+        isRecent
+      });
+    }
+  }
+  return apps;
+}
+
+// ── Highlight helper ────────────────────────────────────
+function highlight(text, q) {
+  if (!q || !text) return escHtml(text);
+  const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return escHtml(text).replace(new RegExp(safe, 'gi'), m => `<mark>${m}</mark>`);
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Render ───────────────────────────────────────────────
+function render() {
+  const list = document.getElementById('app-list');
+  const q = searchQuery.toLowerCase();
+
+  const filtered = allApps.filter(a => {
+    if (activeFilter === 'recent'      && !(a.hasReleases && a.isRecent))   return false;
+    if (activeFilter === 'old'         && !(a.hasReleases && !a.isRecent))  return false;
+    if (activeFilter === 'norls-recent'&& !(!a.hasReleases && a.isRecent))  return false;
+    if (activeFilter === 'norls-old'   && !(!a.hasReleases && !a.isRecent)) return false;
+    if (q) {
+      return a.name.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  document.getElementById('visible-count').textContent = filtered.length.toLocaleString();
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="state-box"><div class="big">🔍</div><p>No apps match "<strong>${escHtml(searchQuery)}</strong>"</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map((a, i) => {
+    const catTag = a.hasReleases
+      ? (a.isRecent ? `<span class="tag tag-recent">RECENT</span>` : `<span class="tag tag-old">OLDER</span>`)
+      : (a.isRecent ? `<span class="tag tag-norls">NO RELEASE · RECENT</span>` : `<span class="tag tag-norls">NO RELEASE · OLDER</span>`);
+
+    return `
+    <div class="app-card" style="animation-delay:${Math.min(i,40)*8}ms">
+      <div class="card-left">
+        <div class="app-name">${highlight(a.name, searchQuery)}</div>
+        ${a.desc ? `<div class="app-desc">${highlight(a.desc, searchQuery)}</div>` : ''}
+        <div class="card-tags">${catTag}</div>
+      </div>
+      <div class="card-right">
+        <a class="gh-link" href="${escHtml(a.url)}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.38 7.86 10.9.57.1.78-.25.78-.55v-2.1c-3.2.7-3.87-1.54-3.87-1.54-.52-1.32-1.28-1.67-1.28-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.02 1.75 2.68 1.24 3.33.95.1-.74.4-1.24.72-1.52-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.17a10.95 10.95 0 0 1 5.74 0c2.19-1.48 3.15-1.17 3.15-1.17.62 1.58.23 2.75.11 3.04.73.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.41-5.25 5.69.41.35.78 1.05.78 2.12v3.14c0 .3.2.66.79.55A11.51 11.51 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Init ─────────────────────────────────────────────────
+async function init() {
+  try {
+    const res = await fetch(RAW_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    allApps = parseSummary(text);
+
+    const withRls   = allApps.filter(a => a.hasReleases).length;
+    const noRls     = allApps.filter(a => !a.hasReleases).length;
+
+    document.getElementById('badge-total').textContent   = `${allApps.length} apps tracked`;
+    document.getElementById('badge-releases').textContent = `${withRls} with releases`;
+    const bno = document.getElementById('badge-norls');
+    bno.textContent = `${noRls} no release`;
+    bno.style.display = '';
+
+    // Fetch commit date for "last updated"
+    try {
+      const apiRes = await fetch('https://api.github.com/repos/timschneeb/app-crawler/commits?path=SUMMARY.md&per_page=1');
+      if (apiRes.ok) {
+        const commits = await apiRes.json();
+        if (commits[0]) {
+          const date = new Date(commits[0].commit.author.date);
+          document.getElementById('updated-label').textContent =
+            'Updated ' + date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+      }
+    } catch {}
+
+    render();
+  } catch (e) {
+    document.getElementById('app-list').innerHTML = `
+      <div class="state-box">
+        <div class="big">⚠️</div>
+        <p>Failed to fetch data.</p>
+        <p style="margin-top:8px;font-size:10px;color:var(--red)">${e.message}</p>
+        <p style="margin-top:12px">Check your internet connection or try again later.</p>
+      </div>`;
+  }
+}
+
+// ── Events ────────────────────────────────────────────────
+document.getElementById('search').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  render();
+});
+
+document.getElementById('tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  activeFilter = tab.dataset.filter;
+  render();
+});
+
+init();
+</script>
+</body>
+</html>
