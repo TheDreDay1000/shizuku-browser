@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Shizuku Browser · Find Every Shizuku-Powered App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,1,0&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════════════
+   DESIGN TOKENS — DARK / LIGHT
+══════════════════════════════════════════════ */
+:root {
+  --dur-s: 120ms; --dur-m: 260ms; --dur-l: 420ms;
+  --ease: cubic-bezier(.2,0,0,1);
+  --ease-out: cubic-bezier(0,0,0,1);
+  --r-xs:4px; --r-sm:8px; --r-md:14px; --r-lg:20px; --r-xl:28px; --r-full:9999px;
+}
+[data-theme="dark"] {
+  --bg:          #0c0f14;
+  --bg-alt:      #111520;
+  --surf:        #151a24;
+  --surf-lo:     #0f1319;
+  --surf-hi:     #1c2333;
+  --surf-hover:  #212840;
+  --border:      #1e2740;
+  --border-hi:   #2d3a55;
+  --primary:     #4ecca3;
+  --primary-dim: #2ea87e;
+  --primary-bg:  rgba(78,204,163,.10);
+  --primary-bd:  rgba(78,204,163,.22);
+  --on-primary:  #002b1e;
+  --text:        #d0dcea;
+  --text-dim:    #6e84a0;
+  --text-muted:  #3d5070;
+  --shadow:      rgba(0,0,0,.55);
+  /* category colors */
+  --cat-multi:   #60c3f5; --cat-multi-bg: rgba(96,195,245,.10); --cat-multi-bd: rgba(96,195,245,.22);
+  --cat-social:  #f07cc2; --cat-social-bg:rgba(240,124,194,.10);--cat-social-bd:rgba(240,124,194,.22);
+  --cat-comms:   #8b8bff; --cat-comms-bg: rgba(139,139,255,.10);--cat-comms-bd: rgba(139,139,255,.22);
+  --cat-tools:   #ffa657; --cat-tools-bg: rgba(255,166,87,.10); --cat-tools-bd: rgba(255,166,87,.22);
+  --cat-custom:  #d090ff; --cat-custom-bg:rgba(208,144,255,.10);--cat-custom-bd:rgba(208,144,255,.22);
+  --cat-other:   #7090b0; --cat-other-bg: rgba(112,144,176,.09);--cat-other-bd: rgba(112,144,176,.20);
+  --amber:       #ffc060; --amber-bg:rgba(255,192,96,.10); --amber-bd:rgba(255,192,96,.22);
+}
+[data-theme="light"] {
+  --bg:          #f2f5fa;
+  --bg-alt:      #e8edf5;
+  --surf:        #ffffff;
+  --surf-lo:     #f7f9fc;
+  --surf-hi:     #edf1f8;
+  --surf-hover:  #e4eaf5;
+  --border:      #dde5f0;
+  --border-hi:   #c8d5e8;
+  --primary:     #007a57;
+  --primary-dim: #005a40;
+  --primary-bg:  rgba(0,122,87,.08);
+  --primary-bd:  rgba(0,122,87,.20);
+  --on-primary:  #ffffff;
+  --text:        #1a2535;
+  --text-dim:    #4a6080;
+  --text-muted:  #8fa8c0;
+  --shadow:      rgba(0,0,0,.12);
+  --cat-multi:   #0077b6; --cat-multi-bg: rgba(0,119,182,.08); --cat-multi-bd: rgba(0,119,182,.20);
+  --cat-social:  #b5005b; --cat-social-bg:rgba(181,0,91,.07);  --cat-social-bd:rgba(181,0,91,.18);
+  --cat-comms:   #4040c0; --cat-comms-bg: rgba(64,64,192,.07); --cat-comms-bd: rgba(64,64,192,.18);
+  --cat-tools:   #7a4000; --cat-tools-bg: rgba(122,64,0,.07);  --cat-tools-bd: rgba(122,64,0,.18);
+  --cat-custom:  #6600aa; --cat-custom-bg:rgba(102,0,170,.07); --cat-custom-bd:rgba(102,0,170,.18);
+  --cat-other:   #405570; --cat-other-bg: rgba(64,85,112,.07); --cat-other-bd: rgba(64,85,112,.18);
+  --amber:       #7a4d00; --amber-bg:rgba(122,77,0,.08); --amber-bd:rgba(122,77,0,.20);
+}
+
+/* ══════════════════════════════════════════════
+   BASE
+══════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--dur-m) var(--ease), color var(--dur-m) var(--ease);
+  overflow-x: hidden;
+}
+
+/* Ambient light blobs */
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+}
+.amb-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: .55;
+  transition: opacity var(--dur-m);
+}
+.amb-1 { width:500px;height:400px; top:-100px; left:-80px; background: radial-gradient(ellipse, rgba(78,204,163,.12) 0%, transparent 70%); }
+.amb-2 { width:400px;height:350px; bottom:-80px; right:-60px; background: radial-gradient(ellipse, rgba(96,195,245,.09) 0%, transparent 70%); }
+.amb-3 { width:300px;height:280px; top:40%; left:55%; background: radial-gradient(ellipse, rgba(208,144,255,.06) 0%, transparent 70%); }
+[data-theme="light"] .amb-blob { opacity: .4; }
+
+.page { position: relative; z-index: 1; }
+.inner { max-width: 980px; margin: 0 auto; padding: 0 18px; }
+
+/* ══════════════════════════════════════════════
+   TOP BAR
+══════════════════════════════════════════════ */
+.top-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: color-mix(in srgb, var(--surf) 88%, transparent);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--border);
+  transition: box-shadow var(--dur-s), background var(--dur-m), border-color var(--dur-m);
+}
+.top-bar.raised { box-shadow: 0 4px 24px var(--shadow); }
+.top-bar-inner {
+  display: flex; align-items: center; gap: 10px;
+  height: 60px;
+}
+.logo {
+  width: 34px; height: 34px; border-radius: var(--r-md);
+  background: var(--primary-bg); border: 1px solid var(--primary-bd);
+  display: grid; place-items: center; flex-shrink: 0;
+  transition: all var(--dur-m);
+}
+.logo .material-symbols-rounded { color: var(--primary); font-size: 18px; }
+.bar-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 19px; font-weight: 400; letter-spacing: -.2px;
+  color: var(--text); flex: 1;
+  transition: color var(--dur-m);
+}
+.bar-title em { font-style: italic; color: var(--primary); }
+.bar-actions { display: flex; gap: 2px; }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: var(--r-full);
+  border: none; background: transparent; color: var(--text-dim);
+  cursor: pointer; display: grid; place-items: center;
+  position: relative; overflow: hidden; text-decoration: none;
+  transition: color var(--dur-s), background var(--dur-s);
+}
+.icon-btn:hover { background: var(--surf-hi); color: var(--text); }
+.icon-btn .material-symbols-rounded { font-size: 20px; position: relative; z-index: 1; }
+
+/* ══════════════════════════════════════════════
+   HERO
+══════════════════════════════════════════════ */
+.hero { padding: 40px 0 10px; }
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--primary); background: var(--primary-bg);
+  border: 1px solid var(--primary-bd); border-radius: var(--r-full);
+  padding: 4px 12px; margin-bottom: 14px;
+  transition: all var(--dur-m);
+}
+.hero-eyebrow .material-symbols-rounded { font-size: 13px; }
+.hero-headline {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(30px, 5.5vw, 50px);
+  font-weight: 400; line-height: 1.08; letter-spacing: -.5px;
+  color: var(--text); margin-bottom: 14px;
+  transition: color var(--dur-m);
+}
+.hero-headline em { font-style: italic; color: var(--primary); }
+.hero-desc {
+  font-size: 14px; color: var(--text-dim); max-width: 580px;
+  line-height: 1.75; margin-bottom: 24px;
+  transition: color var(--dur-m);
+}
+.hero-desc a { color: var(--primary); text-decoration: none; }
+.hero-desc a:hover { text-decoration: underline; }
+.hero-desc strong { color: var(--text); font-weight: 500; }
+
+/* Stat strip */
+.stat-strip {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px;
+}
+.stat-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: var(--r-full);
+  font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--surf);
+  color: var(--text-dim);
+  transition: all var(--dur-m);
+}
+.stat-chip .material-symbols-rounded { font-size: 14px; }
+.stat-chip.primary { color: var(--primary); background: var(--primary-bg); border-color: var(--primary-bd); }
+.stat-chip.amber   { color: var(--amber);   background: var(--amber-bg);   border-color: var(--amber-bd); }
+
+/* ══════════════════════════════════════════════
+   EXCLUDED GAMING NOTICE
+══════════════════════════════════════════════ */
+.exclude-notice {
+  display: none; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: var(--r-md);
+  background: rgba(255,90,90,.08); border: 1px solid rgba(255,90,90,.2);
+  font-size: 12px; color: #ff8080; margin-bottom: 18px;
+  transition: all var(--dur-m);
+}
+[data-theme="light"] .exclude-notice { color: #b00020; background: rgba(176,0,32,.06); border-color: rgba(176,0,32,.18); }
+.exclude-notice.show { display: flex; }
+.exclude-notice .material-symbols-rounded { font-size: 16px; flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════
+   CONTROLS
+══════════════════════════════════════════════ */
+.controls { padding: 0 0 16px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Search */
+.search-wrap { position: relative; }
+.search-icon {
+  position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); font-size: 19px; pointer-events: none;
+  transition: color var(--dur-s);
+}
+#search {
+  width: 100%; height: 50px;
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: var(--r-full); color: var(--text);
+  font-family: 'Geist', sans-serif; font-size: 14px;
+  padding: 0 44px 0 48px; outline: none;
+  transition: border-color var(--dur-s), box-shadow var(--dur-s), background var(--dur-m);
+}
+#search::placeholder { color: var(--text-muted); }
+#search:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+#search:focus + .search-icon { color: var(--primary); }
+.search-clear-btn {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  opacity: 0; pointer-events: none; transition: opacity var(--dur-s);
+}
+.search-clear-btn.show { opacity: 1; pointer-events: auto; }
+
+/* Filter section label */
+.filter-label {
+  font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-muted); padding: 0 2px;
+}
+
+/* Chip scroll row */
+.chip-row {
+  display: flex; gap: 5px; overflow-x: auto; padding-bottom: 2px;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.chip-row::-webkit-scrollbar { display: none; }
+
+/* Filter chips */
+.fchip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 0 14px; height: 34px; border-radius: var(--r-full);
+  border: 1px solid var(--border); background: var(--surf);
+  color: var(--text-dim); font-family: 'Geist', sans-serif;
+  font-size: 12px; font-weight: 500; white-space: nowrap;
+  cursor: pointer; flex-shrink: 0; position: relative; overflow: hidden;
+  transition: all var(--dur-s);
+  -webkit-tap-highlight-color: transparent;
+}
+.fchip:hover { background: var(--surf-hi); border-color: var(--border-hi); color: var(--text); }
+.fchip .material-symbols-rounded { font-size: 15px; }
+.fchip .chip-count {
+  font-size: 10px; font-weight: 600; opacity: .7;
+  background: color-mix(in srgb, currentColor 15%, transparent);
+  padding: 1px 5px; border-radius: var(--r-full);
+}
+
+/* Selected states — base */
+.fchip.sel {
+  font-weight: 600;
+  box-shadow: 0 1px 4px var(--shadow);
+}
+/* Category-colored selected chips */
+.fchip[data-cat="all"].sel      { background:var(--primary-bg); border-color:var(--primary-bd); color:var(--primary); }
+.fchip[data-cat="multimedia"].sel { background:var(--cat-multi-bg); border-color:var(--cat-multi-bd); color:var(--cat-multi); }
+.fchip[data-cat="social"].sel   { background:var(--cat-social-bg);border-color:var(--cat-social-bd);color:var(--cat-social); }
+.fchip[data-cat="comms"].sel    { background:var(--cat-comms-bg); border-color:var(--cat-comms-bd); color:var(--cat-comms); }
+.fchip[data-cat="tools"].sel    { background:var(--cat-tools-bg); border-color:var(--cat-tools-bd); color:var(--cat-tools); }
+.fchip[data-cat="custom"].sel   { background:var(--cat-custom-bg);border-color:var(--cat-custom-bd);color:var(--cat-custom); }
+.fchip[data-cat="other"].sel    { background:var(--cat-other-bg); border-color:var(--cat-other-bd); color:var(--cat-other); }
+/* Status chips */
+.fchip[data-status="all"].sel    { background:var(--primary-bg); border-color:var(--primary-bd); color:var(--primary); }
+.fchip[data-status="recent"].sel { background:var(--primary-bg); border-color:var(--primary-bd); color:var(--primary); }
+.fchip[data-status="old"].sel    { background:var(--amber-bg);   border-color:var(--amber-bd);   color:var(--amber); }
+.fchip[data-status="norls"].sel  { background:var(--cat-other-bg);border-color:var(--cat-other-bd);color:var(--cat-other); }
+
+/* Bottom bar: count + sort */
+.bottom-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.result-count { font-size: 12px; color: var(--text-dim); transition: color var(--dur-m); }
+.result-count strong { color: var(--primary); font-weight: 600; }
+.sort-row { display: flex; align-items: center; gap: 6px; }
+.sort-row label { font-size: 11px; color: var(--text-muted); }
+.sort-wrap { position: relative; }
+.sort-wrap .material-symbols-rounded {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-size: 14px; color: var(--text-dim); pointer-events: none;
+}
+#sort-sel {
+  appearance: none; -webkit-appearance: none;
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: var(--r-sm); color: var(--text);
+  font-family: 'Geist', sans-serif; font-size: 12px; font-weight: 500;
+  padding: 6px 28px 6px 10px; cursor: pointer; outline: none;
+  transition: border-color var(--dur-s), background var(--dur-m);
+}
+#sort-sel:focus { border-color: var(--primary); }
+#sort-sel option { background: var(--surf); }
+
+/* ══════════════════════════════════════════════
+   APP GRID
+══════════════════════════════════════════════ */
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: 6px;
+  padding-bottom: 80px;
+}
+
+/* Card */
+.app-card {
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 14px;
+  display: flex; align-items: flex-start; gap: 12px;
+  position: relative; overflow: hidden;
+  transition: border-color var(--dur-s), box-shadow var(--dur-s), transform var(--dur-s), background var(--dur-m);
+  animation: fadeUp .28s var(--ease-out) both;
+  cursor: default;
+}
+.app-card:hover {
+  border-color: var(--border-hi);
+  box-shadow: 0 4px 20px var(--shadow);
+  transform: translateY(-1px);
+  background: var(--surf-hi);
+}
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* Category color accent line */
+.card-accent {
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  transition: background var(--dur-m);
+}
+.accent-multimedia { background: var(--cat-multi); }
+.accent-social     { background: var(--cat-social); }
+.accent-comms      { background: var(--cat-comms); }
+.accent-tools      { background: var(--cat-tools); }
+.accent-custom     { background: var(--cat-custom); }
+.accent-other      { background: var(--cat-other); }
+
+/* Card icon */
+.card-ico {
+  width: 38px; height: 38px; border-radius: var(--r-md);
+  display: grid; place-items: center; flex-shrink: 0; margin-top: 1px;
+  transition: background var(--dur-m);
+}
+.card-ico .material-symbols-rounded { font-size: 20px; }
+.ico-multimedia { background:var(--cat-multi-bg); } .ico-multimedia .material-symbols-rounded { color:var(--cat-multi); }
+.ico-social     { background:var(--cat-social-bg);} .ico-social .material-symbols-rounded     { color:var(--cat-social); }
+.ico-comms      { background:var(--cat-comms-bg); } .ico-comms .material-symbols-rounded      { color:var(--cat-comms); }
+.ico-tools      { background:var(--cat-tools-bg); } .ico-tools .material-symbols-rounded      { color:var(--cat-tools); }
+.ico-custom     { background:var(--cat-custom-bg);} .ico-custom .material-symbols-rounded     { color:var(--cat-custom); }
+.ico-other      { background:var(--cat-other-bg); } .ico-other .material-symbols-rounded      { color:var(--cat-other); }
+
+.card-body { flex: 1; min-width: 0; }
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+.card-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 15px; font-weight: 400; letter-spacing: -.1px;
+  color: var(--text); line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color var(--dur-m);
+}
+.card-name mark { background: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--primary); border-radius: 2px; padding: 0 1px; }
+
+.gh-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: var(--r-full);
+  background: var(--surf-hi); border: 1px solid var(--border-hi);
+  color: var(--text-dim); font-family: 'Geist', sans-serif;
+  font-size: 11px; font-weight: 500; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0;
+  transition: all var(--dur-s);
+}
+.gh-btn:hover { background: var(--surf-hover); color: var(--text); border-color: var(--primary-bd); }
+.gh-btn .material-symbols-rounded { font-size: 12px; }
+.gh-btn-label { display: none; }
+@media(min-width:500px) { .gh-btn-label { display: inline; } }
+
+.card-desc {
+  font-size: 12px; color: var(--text-dim); line-height: 1.55;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-bottom: 8px;
+  transition: color var(--dur-m);
+}
+.card-desc mark { background: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--primary); border-radius: 2px; }
+
+.card-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.pill {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: var(--r-full);
+  font-size: 10px; font-weight: 600; letter-spacing: .02em;
+  border: 1px solid; transition: all var(--dur-m);
+}
+.pill .material-symbols-rounded { font-size: 11px; }
+.pill-recent { color:var(--primary); background:var(--primary-bg); border-color:var(--primary-bd); }
+.pill-old    { color:var(--amber);   background:var(--amber-bg);   border-color:var(--amber-bd); }
+.pill-norls  { color:var(--text-dim);background:var(--cat-other-bg);border-color:var(--cat-other-bd); }
+/* Category pill */
+.pill-multimedia { color:var(--cat-multi); background:var(--cat-multi-bg); border-color:var(--cat-multi-bd); }
+.pill-social     { color:var(--cat-social);background:var(--cat-social-bg);border-color:var(--cat-social-bd); }
+.pill-comms      { color:var(--cat-comms); background:var(--cat-comms-bg); border-color:var(--cat-comms-bd); }
+.pill-tools      { color:var(--cat-tools); background:var(--cat-tools-bg); border-color:var(--cat-tools-bd); }
+.pill-custom     { color:var(--cat-custom);background:var(--cat-custom-bg);border-color:var(--cat-custom-bd); }
+.pill-other      { color:var(--cat-other); background:var(--cat-other-bg); border-color:var(--cat-other-bd); }
+
+/* ══════════════════════════════════════════════
+   STATES
+══════════════════════════════════════════════ */
+.state-box {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px; padding: 72px 24px; text-align: center; grid-column: 1/-1;
+}
+.state-ico {
+  width: 60px; height: 60px; border-radius: var(--r-xl);
+  background: var(--surf-hi); display: grid; place-items: center;
+  transition: background var(--dur-m);
+}
+.state-ico .material-symbols-rounded { font-size: 28px; color: var(--text-dim); }
+.state-title { font-family: 'Instrument Serif', serif; font-size: 20px; color: var(--text); transition: color var(--dur-m); }
+.state-sub   { font-size: 13px; color: var(--text-dim); max-width: 300px; line-height: 1.6; transition: color var(--dur-m); }
+
+.spinner {
+  width: 34px; height: 34px; border: 2px solid var(--border);
+  border-top-color: var(--primary); border-radius: 50%;
+  animation: spin .7s linear infinite;
+  transition: border-color var(--dur-m);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════════ */
+.footer {
+  padding: 0 18px 36px; text-align: center;
+}
+.footer-inner {
+  display: inline-block; padding: 12px 20px;
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: var(--r-lg); font-size: 11px; color: var(--text-dim);
+  line-height: 1.9; transition: all var(--dur-m);
+}
+.footer-inner a { color: var(--primary); text-decoration: none; }
+.footer-inner a:hover { text-decoration: underline; }
+
+/* ══════════════════════════════════════════════
+   THEME FLASH
+══════════════════════════════════════════════ */
+.theme-flash {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background: var(--bg); opacity: 0; transition: opacity .12s;
+}
+.theme-flash.on { opacity: .4; }
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════ */
+@media(max-width:480px) {
+  .hero-headline { font-size: 28px; }
+  .app-card { padding: 12px; gap: 10px; }
+  .card-ico { width: 34px; height: 34px; }
+}
+</style>
+</head>
+<body>
+<div class="ambient">
+  <div class="amb-blob amb-1"></div>
+  <div class="amb-blob amb-2"></div>
+  <div class="amb-blob amb-3"></div>
+</div>
+
+<div class="page">
+<div class="theme-flash" id="themeFlash"></div>
+
+<!-- TOP BAR -->
+<header class="top-bar" id="topBar">
+  <div class="inner top-bar-inner">
+    <div class="logo">
+      <span class="material-symbols-rounded">bolt</span>
+    </div>
+    <h1 class="bar-title">Shizuku <em>Browser</em></h1>
+    <div class="bar-actions">
+      <button class="icon-btn" id="themeBtn" title="Toggle theme">
+        <span class="material-symbols-rounded" id="themeIcon">light_mode</span>
+      </button>
+      <a class="icon-btn" href="https://github.com/timschneeb/app-crawler" target="_blank" rel="noopener" title="Source repo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="position:relative;z-index:1">
+          <path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.38 7.86 10.9.57.1.78-.25.78-.55v-2.1c-3.2.7-3.87-1.54-3.87-1.54-.52-1.32-1.28-1.67-1.28-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.02 1.75 2.68 1.24 3.33.95.1-.74.4-1.24.72-1.52-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.17a10.95 10.95 0 0 1 5.74 0c2.19-1.48 3.15-1.17 3.15-1.17.62 1.58.23 2.75.11 3.04.73.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.41-5.25 5.69.41.35.78 1.05.78 2.12v3.14c0 .3.2.66.79.55A11.51 11.51 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="inner hero">
+  <div class="hero-eyebrow">
+    <span class="material-symbols-rounded">radar</span>
+    Live-crawled daily from GitHub
+  </div>
+  <h2 class="hero-headline">The complete directory of<br><em>Shizuku-powered</em> apps</h2>
+  <p class="hero-desc">
+    <strong>Shizuku Browser</strong> is the only place to find <em>every</em> Android app that uses
+    <a href="https://shizuku.rikka.app" target="_blank" rel="noopener">Shizuku</a> — the developer tool
+    that grants apps elevated ADB-level system permissions without requiring root access.
+    Whether you're looking for customization tools, system utilities, media players, or communication apps,
+    if it uses Shizuku, it's here. Gaming apps are excluded to keep the focus on productivity and utility.
+    Data is pulled live from <a href="https://github.com/timschneeb/app-crawler" target="_blank" rel="noopener">timschneeb/app-crawler</a>
+    on every visit — no server, no account, no ads.
+  </p>
+  <div class="stat-strip" id="statStrip">
+    <div class="stat-chip primary">
+      <span class="material-symbols-rounded">apps</span>
+      <span id="chipTotal">Loading…</span>
+    </div>
+  </div>
+</section>
+
+<!-- CONTROLS -->
+<div class="inner controls">
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <span class="material-symbols-rounded search-icon">search</span>
+    <input id="search" type="search" placeholder="Search app names and descriptions…" autocomplete="off" spellcheck="false"/>
+    <button class="icon-btn search-clear-btn" id="clearBtn" aria-label="Clear">
+      <span class="material-symbols-rounded">close</span>
+    </button>
+  </div>
+
+  <!-- Gaming exclusion notice -->
+  <div class="exclude-notice" id="excludeNotice">
+    <span class="material-symbols-rounded">sports_esports</span>
+    <span id="excludeText"></span>
+  </div>
+
+  <!-- Category filters -->
+  <div>
+    <p class="filter-label" style="margin-bottom:7px">Category</p>
+    <div class="chip-row" id="catRow">
+      <button class="fchip sel" data-cat="all">
+        <span class="material-symbols-rounded">layers</span>
+        <span>All</span>
+        <span class="chip-count" id="cnt-all">–</span>
+      </button>
+      <button class="fchip" data-cat="multimedia">
+        <span class="material-symbols-rounded">play_circle</span>
+        <span>Multimedia</span>
+        <span class="chip-count" id="cnt-multimedia">–</span>
+      </button>
+      <button class="fchip" data-cat="social">
+        <span class="material-symbols-rounded">group</span>
+        <span>Social</span>
+        <span class="chip-count" id="cnt-social">–</span>
+      </button>
+      <button class="fchip" data-cat="comms">
+        <span class="material-symbols-rounded">chat</span>
+        <span>Communications</span>
+        <span class="chip-count" id="cnt-comms">–</span>
+      </button>
+      <button class="fchip" data-cat="tools">
+        <span class="material-symbols-rounded">build</span>
+        <span>Tools &amp; Utilities</span>
+        <span class="chip-count" id="cnt-tools">–</span>
+      </button>
+      <button class="fchip" data-cat="custom">
+        <span class="material-symbols-rounded">palette</span>
+        <span>Customization</span>
+        <span class="chip-count" id="cnt-custom">–</span>
+      </button>
+      <button class="fchip" data-cat="other">
+        <span class="material-symbols-rounded">grid_view</span>
+        <span>Other</span>
+        <span class="chip-count" id="cnt-other">–</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Status filters -->
+  <div>
+    <p class="filter-label" style="margin-bottom:7px">Release status</p>
+    <div class="chip-row" id="statusRow">
+      <button class="fchip sel" data-status="all">
+        <span class="material-symbols-rounded">deployed_code</span>
+        <span>All statuses</span>
+      </button>
+      <button class="fchip" data-status="recent">
+        <span class="material-symbols-rounded">rocket_launch</span>
+        <span>Recent releases</span>
+      </button>
+      <button class="fchip" data-status="old">
+        <span class="material-symbols-rounded">schedule</span>
+        <span>Older releases</span>
+      </button>
+      <button class="fchip" data-status="norls">
+        <span class="material-symbols-rounded">code_blocks</span>
+        <span>No release</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sort + count -->
+  <div class="bottom-bar">
+    <p class="result-count"><strong id="visibleCount">–</strong> <span id="resultLabel">apps</span></p>
+    <div class="sort-row">
+      <label for="sort-sel">Sort</label>
+      <div class="sort-wrap">
+        <select id="sort-sel">
+          <option value="default">Default order</option>
+          <option value="az">Name A → Z</option>
+          <option value="za">Name Z → A</option>
+          <option value="recent">Recent first</option>
+          <option value="rls">Has releases first</option>
+          <option value="norls">No releases first</option>
+        </select>
+        <span class="material-symbols-rounded">expand_more</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP GRID -->
+<main class="inner">
+  <div class="app-grid" id="appGrid">
+    <div class="state-box">
+      <div class="spinner"></div>
+      <p class="state-title">Fetching apps…</p>
+      <p class="state-sub">Loading live data from GitHub</p>
+    </div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="inner footer">
+  <div class="footer-inner">
+    Data: <a href="https://github.com/timschneeb/app-crawler" target="_blank" rel="noopener">timschneeb/app-crawler</a> ·
+    Curated: <a href="https://github.com/timschneeb/awesome-shizuku" target="_blank" rel="noopener">awesome-shizuku</a> ·
+    No server · No tracking · Categories auto-detected from app names &amp; descriptions
+  </div>
+</footer>
+
+</div><!-- .page -->
+
+<script>
+/* ══════════════════════════════════════════
+   THEME
+══════════════════════════════════════════ */
+const THEME_KEY = 'shizuku-v3-theme';
+let theme = localStorage.getItem(THEME_KEY) ||
+  (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+function setTheme(t, flash=true) {
+  theme = t;
+  localStorage.setItem(THEME_KEY, t);
+  const fl = document.getElementById('themeFlash');
+  const applyIt = () => {
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('themeIcon').textContent = t==='dark' ? 'light_mode' : 'dark_mode';
+  };
+  if (flash) {
+    fl.classList.add('on');
+    setTimeout(() => { applyIt(); fl.classList.remove('on'); }, 110);
+  } else applyIt();
+}
+setTheme(theme, false);
+document.getElementById('themeBtn').addEventListener('click', () => setTheme(theme==='dark'?'light':'dark'));
+
+/* Scroll shadow */
+window.addEventListener('scroll', () =>
+  document.getElementById('topBar').classList.toggle('raised', scrollY > 4), {passive:true});
+
+/* ══════════════════════════════════════════
+   CATEGORISATION ENGINE
+══════════════════════════════════════════ */
+const CATS = {
+  multimedia: {
+    label:'Multimedia', icon:'play_circle',
+    kw:['audio','video','music','player','media','sound','camera','photo','image','shutter',
+        'volume','mixer','stream','cast','podcast','radio','equalizer','speaker','headphone',
+        'screenshot','screen record','subtitle','codec','mkv','mp3','mp4','vlc','mpv',
+        'gallery','wallpaper player','lyrics','playback']
+  },
+  social: {
+    label:'Social', icon:'group',
+    kw:['reddit','twitter','mastodon','instagram','facebook','tiktok','feed','timeline',
+        'fediverse','bluesky','lemmy','pixelfed','nostr','social network','post','profile',
+        'follower','following','hashtag','retweet','like','share post']
+  },
+  comms: {
+    label:'Communications', icon:'chat',
+    kw:['sms','call','message','notification','clipboard','contact','chat','telegram','discord',
+        'email','mail','inbox','reply','send message','receive','whatsapp','signal','matrix',
+        'xmpp','voip','mms','dialer','phone call','incoming call','missed call']
+  },
+  custom: {
+    label:'Customization', icon:'palette',
+    kw:['theme','icon pack','wallpaper','aod','always on display','font','color scheme','launcher',
+        'widget','home screen','lockscreen','navbar','status bar','gesture','tweak','monet',
+        'dynamic color','material you','one ui','nothing os','pixel','samsung','miui','boot anim',
+        'splash','transition','animation','quick settings','tile','ui mod','overlay','style']
+  },
+  tools: {
+    label:'Tools & Utilities', icon:'build',
+    kw:['backup','debloat','adb','shell','permission','manager','installer','uninstaller','battery',
+        'cpu','memory','ram','storage','cleaner','booster','performance','proxy','vpn','firewall',
+        'network','dns','block','kill','freeze','disable enable','shortcut','automation','file',
+        'system','root','utility','scanner','monitor','debug','log','task','process','package',
+        'apk','flashlight','clock','timer','calendar','note','todo','qr','barcode','clipboard manager',
+        'power','reboot','restart','shutdown','sleep','wake','sync','transfer','pair','mirror',
+        'tiling','window manager','split screen','pip','floating','lock','unlock','pin','secure',
+        'privacy','ad block','tracker','backup restore','module','xposed','lsposed','magisk']
+  }
+};
+
+const GAMING_KW = [
+  'game','gaming','gamer','gamepads','joystick','arcade',
+  'emulator','rom hack','game booster','game launcher','play games',
+  'android game','mobile game','game controller','gamepad mapping',
+  'game hud','fps overlay for games','game turbo','game mode',
+  'game plugin','game service'
+];
+
+function categorize(name, desc) {
+  const t = (name + ' ' + desc).toLowerCase();
+  // Gaming check
+  for (const kw of GAMING_KW) if (t.includes(kw)) return 'gaming';
+  // Category check
+  for (const [key, cat] of Object.entries(CATS))
+    for (const kw of cat.kw) if (t.includes(kw)) return key;
+  return 'other';
+}
+
+/* ══════════════════════════════════════════
+   PARSER
+══════════════════════════════════════════ */
+const RAW = 'https://raw.githubusercontent.com/timschneeb/app-crawler/master/SUMMARY.md';
+const GH_API = 'https://api.github.com/repos/timschneeb/app-crawler/commits?path=SUMMARY.md&per_page=1';
+
+let allApps=[], excludedCount=0;
+let activeCat='all', activeStatus='all', searchQ='', sortMode='default';
+
+function parseMd(md) {
+  const apps=[], lines=md.split('\n');
+  let hasRls=false, isRecent=false;
+  const re=/^\*\s+\[([^\]]+)\]\(([^)]+)\)(?:\s*[-–]\s*(.+))?/;
+  for (const l of lines) {
+    const s=l.trim();
+    if (s.startsWith('### Apps with releases'))    { hasRls=true;  continue; }
+    if (s.startsWith('### Apps with no releases')) { hasRls=false; continue; }
+    if (s.startsWith('#### Updated in the last 3 months'))   { isRecent=true;  continue; }
+    if (s.startsWith('#### Updated more than 3 months ago')) { isRecent=false; continue; }
+    const m=re.exec(s);
+    if (m) apps.push({
+      name:m[1].trim(), url:m[2].trim(), desc:(m[3]||'').trim(),
+      hasRls, isRecent, cat: categorize(m[1], m[3]||'')
+    });
+  }
+  return apps;
+}
+
+/* ══════════════════════════════════════════
+   UTIL
+══════════════════════════════════════════ */
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function hi(text, q) {
+  if (!q||!text) return esc(text);
+  const safe=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return esc(text).replace(new RegExp(safe,'gi'), m=>`<mark>${m}</mark>`);
+}
+
+/* ══════════════════════════════════════════
+   FILTER + SORT
+══════════════════════════════════════════ */
+function getList() {
+  const q=searchQ.toLowerCase();
+  let list = allApps.filter(a => {
+    if (activeCat!=='all' && a.cat!==activeCat) return false;
+    if (activeStatus==='recent' && !(a.hasRls && a.isRecent))   return false;
+    if (activeStatus==='old'    && !(a.hasRls && !a.isRecent))  return false;
+    if (activeStatus==='norls'  && a.hasRls) return false;
+    if (q) return a.name.toLowerCase().includes(q)||a.desc.toLowerCase().includes(q);
+    return true;
+  });
+  if (sortMode==='az')    list=[...list].sort((a,b)=>a.name.localeCompare(b.name));
+  if (sortMode==='za')    list=[...list].sort((a,b)=>b.name.localeCompare(a.name));
+  if (sortMode==='recent')list=[...list].sort((a,b)=>(b.isRecent?1:0)-(a.isRecent?1:0));
+  if (sortMode==='rls')   list=[...list].sort((a,b)=>(b.hasRls?1:0)-(a.hasRls?1:0));
+  if (sortMode==='norls') list=[...list].sort((a,b)=>(a.hasRls?1:0)-(b.hasRls?1:0));
+  return list;
+}
+
+/* ══════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════ */
+const CAT_META = {
+  multimedia: { label:'Multimedia',     icon:'play_circle' },
+  social:     { label:'Social',         icon:'group'       },
+  comms:      { label:'Communications', icon:'chat'        },
+  tools:      { label:'Tools & Utils',  icon:'build'       },
+  custom:     { label:'Customization',  icon:'palette'     },
+  other:      { label:'Other',          icon:'grid_view'   }
+};
+
+function statusPill(a) {
+  if (a.hasRls && a.isRecent)  return `<span class="pill pill-recent"><span class="material-symbols-rounded">rocket_launch</span>RECENT</span>`;
+  if (a.hasRls && !a.isRecent) return `<span class="pill pill-old"><span class="material-symbols-rounded">schedule</span>OLDER RELEASE</span>`;
+  if (!a.hasRls && a.isRecent) return `<span class="pill pill-norls"><span class="material-symbols-rounded">code</span>NO RELEASE · ACTIVE</span>`;
+  return `<span class="pill pill-norls"><span class="material-symbols-rounded">inventory_2</span>NO RELEASE · OLDER</span>`;
+}
+
+function render() {
+  const grid = document.getElementById('appGrid');
+  const list = getList();
+  document.getElementById('visibleCount').textContent = list.length.toLocaleString();
+
+  if (list.length===0) {
+    grid.innerHTML = `<div class="state-box">
+      <div class="state-ico"><span class="material-symbols-rounded">search_off</span></div>
+      <p class="state-title">No apps found</p>
+      <p class="state-sub">Try adjusting your search, category, or status filter</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map((a, i) => {
+    const cm = CAT_META[a.cat] || CAT_META.other;
+    const delay = Math.min(i,80)*5;
+    return `
+    <div class="app-card" style="animation-delay:${delay}ms">
+      <div class="card-accent accent-${a.cat}"></div>
+      <div class="card-ico ico-${a.cat}">
+        <span class="material-symbols-rounded">${cm.icon}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <p class="card-name">${hi(a.name, searchQ)}</p>
+          <a class="gh-btn" href="${esc(a.url)}" target="_blank" rel="noopener">
+            <span class="material-symbols-rounded">open_in_new</span>
+            <span class="gh-btn-label">GitHub</span>
+          </a>
+        </div>
+        ${a.desc?`<p class="card-desc">${hi(a.desc, searchQ)}</p>`:''}
+        <div class="card-pills">
+          ${statusPill(a)}
+          <span class="pill pill-${a.cat}">
+            <span class="material-symbols-rounded">${cm.icon}</span>
+            ${cm.label}
+          </span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+async function init() {
+  try {
+    const res = await fetch(RAW);
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const text = await res.text();
+    const parsed = parseMd(text);
+
+    excludedCount = parsed.filter(a=>a.cat==='gaming').length;
+    allApps = parsed.filter(a=>a.cat!=='gaming');
+
+    // Counts
+    const total = allApps.length;
+    const countByCat = {};
+    for (const a of allApps) countByCat[a.cat] = (countByCat[a.cat]||0)+1;
+
+    // Update stat strip
+    const strip = document.getElementById('statStrip');
+    const withRls  = allApps.filter(a=>a.hasRls).length;
+    const recent   = allApps.filter(a=>a.hasRls && a.isRecent).length;
+    strip.innerHTML = `
+      <div class="stat-chip primary"><span class="material-symbols-rounded">apps</span>${total} apps</div>
+      <div class="stat-chip primary"><span class="material-symbols-rounded">rocket_launch</span>${recent} recent releases</div>
+      <div class="stat-chip amber"><span class="material-symbols-rounded">sports_esports</span>${excludedCount} gaming apps excluded</div>
+    `;
+
+    // Update chip counts
+    document.getElementById('cnt-all').textContent = total;
+    for (const [key] of Object.entries(CATS)) {
+      const el = document.getElementById('cnt-'+key);
+      if (el) el.textContent = countByCat[key]||0;
+    }
+    const elO = document.getElementById('cnt-other');
+    if (elO) elO.textContent = countByCat['other']||0;
+
+    // Gaming notice
+    if (excludedCount > 0) {
+      const n = document.getElementById('excludeNotice');
+      document.getElementById('excludeText').textContent =
+        `${excludedCount} gaming-related app${excludedCount!==1?'s':''} detected and excluded from results`;
+      n.classList.add('show');
+    }
+
+    // Last updated
+    try {
+      const cr = await fetch(GH_API);
+      if (cr.ok) {
+        const c = await cr.json();
+        if (c[0]) {
+          const d = new Date(c[0].commit.author.date);
+          const label = d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+          const chip = document.createElement('div');
+          chip.className='stat-chip';
+          chip.innerHTML=`<span class="material-symbols-rounded">sync</span>Updated ${label}`;
+          strip.appendChild(chip);
+        }
+      }
+    } catch {}
+
+    render();
+  } catch(e) {
+    document.getElementById('appGrid').innerHTML = `
+      <div class="state-box">
+        <div class="state-ico"><span class="material-symbols-rounded">wifi_off</span></div>
+        <p class="state-title">Couldn't load data</p>
+        <p class="state-sub">${esc(e.message)} · Check your connection and refresh</p>
+      </div>`;
+  }
+}
+
+/* ══════════════════════════════════════════
+   EVENTS
+══════════════════════════════════════════ */
+const searchEl = document.getElementById('search');
+const clearBtn = document.getElementById('clearBtn');
+
+searchEl.addEventListener('input', e => {
+  searchQ = e.target.value;
+  clearBtn.classList.toggle('show', searchQ.length>0);
+  render();
+});
+clearBtn.addEventListener('click', () => {
+  searchEl.value=''; searchQ='';
+  clearBtn.classList.remove('show');
+  searchEl.focus(); render();
+});
+
+document.getElementById('catRow').addEventListener('click', e => {
+  const c = e.target.closest('.fchip');
+  if (!c) return;
+  document.querySelectorAll('#catRow .fchip').forEach(x=>x.classList.remove('sel'));
+  c.classList.add('sel');
+  activeCat = c.dataset.cat;
+  render();
+});
+
+document.getElementById('statusRow').addEventListener('click', e => {
+  const c = e.target.closest('.fchip');
+  if (!c) return;
+  document.querySelectorAll('#statusRow .fchip').forEach(x=>x.classList.remove('sel'));
+  c.classList.add('sel');
+  activeStatus = c.dataset.status;
+  render();
+});
+
+document.getElementById('sort-sel').addEventListener('change', e => {
+  sortMode = e.target.value; render();
+});
+
+init();
+</script>
+</body>
+</html>
